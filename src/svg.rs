@@ -14,7 +14,7 @@ const LETTER_WIDTH : usize = 17;
 const LINE_HEIGHT : usize = 42;
 
 /// Output a graph with a set of locations as an SVG file
-pub fn write_graph<P : AsRef<Path>>(graph : &Graph, loc : &Vec<f64>, 
+pub fn write_graph<P : AsRef<Path>>(graph : &Graph, loc : &Vec<f64>,
                                     data : &HashMap<String, Dataset>,
                                     well_size : f64,
                                     settings : &Settings, out_file : P) -> Result<()> {
@@ -24,51 +24,51 @@ pub fn write_graph<P : AsRef<Path>>(graph : &Graph, loc : &Vec<f64>,
     if abs_max < well_size {
         abs_max = well_size;
     }
-    
+
     writeln!(&mut out, "<svg
     xmlns=\"http://www.w3.org/2000/svg\" width=\"{}\" height=\"{}\">",
         (abs_max as usize) * 2, (abs_max as usize) * 2 + LINE_HEIGHT)?;
-    writeln!(&mut out, "{}", 
+    writeln!(&mut out, "{}",
 //"  <script xmlns:xlink=\"http://www.w3.org/1999/xlink\" xlink:href=\"http://lod-cloud.net/versions/2017-08-22/SVGPan.js\"/>
 "  <script xmlns:xlink=\"http://www.w3.org/1999/xlink\" xlink:href=\"http://lod-cloud.net/versions/2017-08-22/both.js\"/>
   <style>
-    circle { 
+    circle {
         stroke: #333;
         stroke-width: 1.5px;
-        fill-opacity: 0.8; 
-    } 
+        fill-opacity: 0.8;
+    }
     .bubble text {
         text-anchor: middle;
         font-size: .5em;
     }
-    .circle-active circle { 
-        stroke: #e80000;  
-        stroke-width: 3px; 
-    } 
-    .link { 
-        stroke: #e0270b;  
-        stroke: #555;  
-        stroke-opacity: 0.7;  
-        stroke-width: 1px;  
+    .circle-active circle {
+        stroke: #e80000;
+        stroke-width: 3px;
+    }
+    .link {
+        stroke: #e0270b;
+        stroke: #555;
+        stroke-opacity: 0.7;
+        stroke-width: 1px;
         stroke-dasharray:none;
-    } 
-    .link-activeIncoming {  
-        stroke-opacity: 1; 
-        stroke-width: 10;  
-        stroke: #be1b38; 
-    } 
-    .link-activeOutgoung {  
-        stroke-opacity: 1;  
-        stroke-width: 10; 
-        stroke: #1AC21D;  
-    } 
-    .link-activeBoth {  
-        stroke-opacity: 1;  
-        stroke: #1AC21D;  
-        stroke-width: 10;  
+    }
+    .link-activeIncoming {
+        stroke-opacity: 1;
+        stroke-width: 10;
+        stroke: #be1b38;
+    }
+    .link-activeOutgoung {
+        stroke-opacity: 1;
+        stroke-width: 10;
+        stroke: #1AC21D;
+    }
+    .link-activeBoth {
+        stroke-opacity: 1;
+        stroke: #1AC21D;
+        stroke-width: 10;
         stroke-dasharray:5,10,5;}
   </style>")?;
-  writeln!(&mut out, 
+  writeln!(&mut out,
 "  <g transform=\"scale({})\">", max(r64(0.5),r64(abs_max/1250.0)))?;
   let leg_len = legend_length(settings);
   writeln!(&mut out, "{}",
@@ -89,7 +89,7 @@ pub fn write_graph<P : AsRef<Path>>(graph : &Graph, loc : &Vec<f64>,
     eprintln!("Final well size: {:.3}", abs_max);
     for edge in graph.edges.iter() {
         writeln!(&mut out, "    <line class=\"link\" targetId=\"{}\" sourceId=\"{}\" x1=\"{}\" y1=\"{}\" x2=\"{}\" y2=\"{}\"/>",
-                 edge.src, edge.trg, 
+                 edge.src, edge.trg,
                  loc[edge.src * 2] + abs_max,
                  loc[edge.src * 2 + 1] + abs_max,
                  loc[edge.trg * 2] + abs_max,
@@ -97,34 +97,35 @@ pub fn write_graph<P : AsRef<Path>>(graph : &Graph, loc : &Vec<f64>,
     }
     writeln!(&mut out, "  </g>
   <g class=\"nodes\">")?;
-    
+
     for i in 0..graph.n {
-        let dataset_name = graph.vertex_name(i).expect("Vertex name not in graph?!"); 
+        let dataset_name = graph.vertex_name(i).expect("Vertex name not in graph?!");
         match data.get(&dataset_name) {
             Some(dataset) => {
                 let title = dataset.title.clone()
                     .unwrap_or_else(|| "Unnamed dataset".to_string());
-                writeln!(&mut out, 
+                writeln!(&mut out,
 "    <g id=\"{}\"
         onmouseover=\"mo(this)\" onmouseout=\"mleave(this)\">
-      <circle class=\"node\" r=\"{}\" cx=\"{}\" cy=\"{}\" fill=\"{}\"><title>{}</title></circle>
-      <a class=\"bubble\" href=\"https://lod-cloud.net/dataset/{}\">
+      <a class=\"bubble\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" xlink:href=\"{}{}\" target=\"_blank\">
+          <circle class=\"node\" r=\"{}\" cx=\"{}\" cy=\"{}\" fill=\"{}\"><title>{}</title></circle>
           <text x=\"{}\" y=\"{}\">{}</text>
       </a>
     </g>",
                  i,
+                 "https://geonovum.github.io/NEN3610-Linkeddata/dataset/",
+                 dataset.identifier,
                  bubble_size(dataset, settings.bubble_size_factor.unwrap_or(10.0)),
                  loc[i * 2] + abs_max,
                  loc[i * 2 + 1] + abs_max,
-                 get_colour(&dataset.domain, &dataset.keywords, settings), 
-                 dataset.identifier,
-                 dataset.identifier,
+                 get_colour(&dataset.domain, &dataset.keywords, settings),
+                 title,
                  loc[i * 2] + abs_max,
                  loc[i * 2 + 1] + abs_max,
-                 encode_minimal(&shorten_text(&title)))?;
+                 encode_minimal(&shorten_text(&dataset.identifier)))?;
             },
             None => {
-                eprintln!("Dataset not in set: {} (maybe `identifier` is incorrect?)", 
+                eprintln!("Dataset not in set: {} (maybe `identifier` is incorrect?)",
                           &dataset_name);
             }
         }
@@ -136,7 +137,7 @@ pub fn write_graph<P : AsRef<Path>>(graph : &Graph, loc : &Vec<f64>,
                      "    <g transform=\"translate(20,{}) scale({})\">
       <text style=\"font-family: Verdana, Arial;\">{}</text>
     </g>",
-    (abs_max as usize) * 2 + LETTER_WIDTH, 
+    (abs_max as usize) * 2 + LETTER_WIDTH,
     min(r64(abs_max * 3.0 / ((rt.len() + 1) as f64) / (LETTER_WIDTH as f64)), r64(1.0)),
     rt)?,
         None => {}
